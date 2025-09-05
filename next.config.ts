@@ -1,10 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // ✅ Prevent ESLint errors from failing the build
   eslint: {
-    // ✅ Prevents ESLint errors from failing `npm run build`
     ignoreDuringBuilds: true,
   },
+  // ✅ Image optimization for remote sources
   images: {
     remotePatterns: [
       {
@@ -22,6 +23,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // ✅ Static export for Firebase Hosting
+  output: "export",
 };
 
 export default nextConfig;
