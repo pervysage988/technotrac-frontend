@@ -5,12 +5,7 @@ const config: Config = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}"
-  ],
-  safelist: [
-    "border-border", // add any dynamically used classes here
-    "bg-background",
-    "text-foreground",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -48,6 +43,17 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+      },
+      // Explicitly enable borderColor utilities
+      borderColor: {
+        DEFAULT: "hsl(var(--border))",
+        border: "hsl(var(--border))",
+      },
+      backgroundColor: {
+        background: "hsl(var(--background))",
+      },
+      textColor: {
+        foreground: "hsl(var(--foreground))",
       },
       fontFamily: {
         body: ["Inter", "sans-serif"],
