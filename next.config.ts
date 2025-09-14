@@ -1,11 +1,12 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
   eslint: {
+    // ✅ allow deploys even if eslint errors exist
     ignoreDuringBuilds: true,
   },
   images: {
-    unoptimized: true,
+    unoptimized: true, // ✅ disables next/image optimization (good for Vercel + Firebase)
     remotePatterns: [
       {
         protocol: "https",
@@ -15,9 +16,13 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "firebasestorage.googleapis.com",
       },
-      // ✅ Remove localhost here for production
     ],
   },
-};
+  reactStrictMode: true,
+  swcMinify: true,
+  env: {
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  },
+}
 
-export default nextConfig;
+export default nextConfig

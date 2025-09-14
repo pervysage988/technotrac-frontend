@@ -1,34 +1,48 @@
-// src/lib/api/admin.ts
 import { Equipment } from "@/lib/data";
 import { API_BASE } from "./config";
 
-export async function fetchPendingEquipment(): Promise<Equipment[]> {
-  const response = await fetch(`${API_BASE}/api/v1/admin/approvals`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch equipment");
-  }
-  return response.json();
+// ✅ Fetch all pending equipment (awaiting admin approval)
+export async function fetchPendingEquipment(token: string): Promise<Equipment[]> {
+  const res = await fetch(`${API_BASE}/api/admin/pending-equipment`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch pending equipment");
+
+  return res.json();
 }
 
-export async function updateEquipmentStatus(equipmentId: string, action: 'approve' | 'reject', token: string) {
-  const endpoint = action === 'approve' 
-    ? `/api/v1/admin/approve/${equipmentId}`
-    : `/api/v1/admin/reject/${equipmentId}`;
-    
+// ✅ Approve or reject equipment
+export async function updateEquipmentStatus(
+  equipmentId: string,
+  action: "approve" | "reject",
+  token: string
+): Promise<{ success: boolean }> {
+  const endpoint =
+    action === "approve"
+      ? `/api/admin/approve/${equipmentId}/`
+      : `/api/admin/reject/${equipmentId}/`;
+
   const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || `Failed to ${action} equipment.`);
+    let errorMessage = `Failed to ${action} equipment.`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorMessage;
+    } catch {}
+    throw new Error(errorMessage);
   }
 
-  // The response for this endpoint might not have a body, or it might.
-  // If it doesn't, .json() will fail. We can return the response object itself.
-  return response;
+  try {
+    return await response.json();
+  } catch {
+    return { success: true };
+  }
 }

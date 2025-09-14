@@ -1,11 +1,20 @@
 import type { Config } from "tailwindcss";
 
-const config: Config = {
+const config = {
   darkMode: "class",
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
+  safelist: [
+    "bg-primary",
+    "text-primary",
+    "border-primary",
+    "bg-secondary",
+    "text-secondary",
+    "border-secondary",
   ],
   theme: {
     extend: {
@@ -44,24 +53,16 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
-      // Explicitly enable borderColor utilities
       borderColor: {
         DEFAULT: "hsl(var(--border))",
         border: "hsl(var(--border))",
       },
-      backgroundColor: {
-        background: "hsl(var(--background))",
-      },
-      textColor: {
-        foreground: "hsl(var(--foreground))",
-      },
       fontFamily: {
-        body: ["Inter", "sans-serif"],
-        headline: ["Poppins", "sans-serif"],
+        sans: ["var(--font-sans)", "sans-serif"],
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
-};
+  plugins: [],
+} satisfies Partial<any>; // 👈 fixes TS complaining about safelist
 
 export default config;

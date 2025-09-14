@@ -1,10 +1,7 @@
-// src/lib/api/bookings.ts
 import { API_BASE } from "./config";
 
-export async function fetchBookings() {
-  const res = await fetch(`${API_BASE}/api/v1/booking`); // singular
-  if (!res.ok) throw new Error("Failed to fetch bookings");
-  return res.json();
+if (!API_BASE) {
+  throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined in your environment");
 }
 
 type BookingPayload = {
@@ -13,8 +10,29 @@ type BookingPayload = {
   end_ts: string;
 };
 
+// ✅ Fetch all bookings (requires admin/user token)
+export async function fetchBookings(token: string) {
+  const response = await fetch(`${API_BASE}/api/bookings/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    let errorMessage = "Failed to fetch bookings.";
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorMessage;
+    } catch {}
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
+// ✅ Create a new booking
 export async function createBooking(payload: BookingPayload, token: string) {
-  const response = await fetch(`${API_BASE}/api/v1/bookings/`, {
+  const response = await fetch(`${API_BASE}/api/bookings/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -24,20 +42,25 @@ export async function createBooking(payload: BookingPayload, token: string) {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || "Failed to create booking.");
+    let errorMessage = "Failed to create booking.";
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorMessage;
+    } catch {}
+    throw new Error(errorMessage);
   }
 
   return response.json();
 }
 
+// ✅ Update booking status (accept/reject)
 export async function updateBookingStatus(
   bookingId: string,
   action: "accept" | "reject",
   token: string
 ) {
   const response = await fetch(
-    `${API_BASE}/api/v1/bookings/${bookingId}/${action}`,
+    `${API_BASE}/api/bookings/${bookingId}/${action}/`,
     {
       method: "PATCH",
       headers: {
@@ -47,14 +70,17 @@ export async function updateBookingStatus(
   );
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || `Failed to ${action} booking.`);
+    let errorMessage = `Failed to ${action} booking.`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorMessage;
+    } catch {}
+    throw new Error(errorMessage);
   }
 
-  // This endpoint may not return a body.
   try {
     return await response.json();
   } catch {
-    return response; // ✅ no unused "e"
+    return { success: true };
   }
 }
