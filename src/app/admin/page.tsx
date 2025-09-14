@@ -35,7 +35,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback } from "react";
-import { fetchPendingEquipment, updateEquipmentStatus } from "@/lib/api/admin";
+import { fetchPendingEquipment, updateEquipmentStatus } from "@/lib/api/equipment";
 import { fetchBookings } from "@/lib/api/bookings";
 
 const equipmentStatusVariant: Record<
@@ -70,10 +70,14 @@ export default function AdminPage() {
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
+  // Fetch pending equipment
+  // Inside AdminPage -> loadEquipment
   const loadEquipment = useCallback(async () => {
+    if (!user) return;
     setIsLoadingEquipment(true);
     try {
-      const data = await fetchPendingEquipment();
+      const token = await user.getIdToken(); // get token
+      const data = await fetchPendingEquipment(token); // pass token
       setEquipment(data);
     } catch (error: unknown) {
       console.error(error);
@@ -85,12 +89,15 @@ export default function AdminPage() {
     } finally {
       setIsLoadingEquipment(false);
     }
-  }, [toast]);
+  }, [user, toast]);
 
+  // Fetch bookings
   const loadBookings = useCallback(async () => {
     setIsLoadingBookings(true);
     try {
-      const data = await fetchBookings();
+      if (!user) throw new Error("User not authenticated");
+      const token = await user.getIdToken(); // Firebase token
+      const data = await fetchBookings(token);
       setAllBookings(data);
     } catch (error: unknown) {
       console.error(error);
@@ -102,8 +109,9 @@ export default function AdminPage() {
     } finally {
       setIsLoadingBookings(false);
     }
-  }, [toast]);
+  }, [toast, user]);
 
+  // Load data on mount
   useEffect(() => {
     if (user) {
       loadEquipment();
@@ -111,6 +119,7 @@ export default function AdminPage() {
     }
   }, [loadEquipment, loadBookings, user]);
 
+  // Handle approve/reject
   const handleStatusUpdate = async (
     equipmentId: string,
     action: "approve" | "reject"
@@ -123,20 +132,18 @@ export default function AdminPage() {
       });
       return;
     }
+
     setIsUpdating(equipmentId);
     try {
       const token = await user.getIdToken();
       await updateEquipmentStatus(equipmentId, action, token);
       toast({
         title: "Success",
-        description: `Equipment has been ${
-          action === "approve" ? "approved" : "rejected"
-        }.`,
+        description: `Equipment has been ${action === "approve" ? "approved" : "rejected"}.`,
       });
-      loadEquipment();
+      loadEquipment(); // refresh equipment list
     } catch (e: unknown) {
-      const message =
-        e instanceof Error ? e.message : "Unknown error occurred";
+      const message = e instanceof Error ? e.message : "Unknown error occurred";
       toast({
         variant: "destructive",
         title: "Update Failed",
@@ -147,9 +154,7 @@ export default function AdminPage() {
     }
   };
 
-  const pendingEquipment = equipment.filter(
-    (e) => e.status === "PENDING_REVIEW"
-  );
+  const pendingEquipment = equipment.filter((e) => e.status === "PENDING_REVIEW");
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -161,9 +166,7 @@ export default function AdminPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Bookings per Day
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Bookings per Day</CardTitle>
               <BarChart2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -187,9 +190,7 @@ export default function AdminPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Supply / Demand by Pincode
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Supply / Demand by Pincode</CardTitle>
               <Map className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -205,20 +206,16 @@ export default function AdminPage() {
       <Tabs defaultValue="approvals">
         <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="approvals">
-            <Clock className="mr-2 h-4 w-4" />
-            Equipment Approvals
+            <Clock className="mr-2 h-4 w-4" /> Equipment Approvals
           </TabsTrigger>
           <TabsTrigger value="bookings">
-            <FileText className="mr-2 h-4 w-4" />
-            All Bookings
+            <FileText className="mr-2 h-4 w-4" /> All Bookings
           </TabsTrigger>
           <TabsTrigger value="users">
-            <Users className="mr-2 h-4 w-4" />
-            User Management
+            <Users className="mr-2 h-4 w-4" /> User Management
           </TabsTrigger>
           <TabsTrigger value="audit">
-            <Tractor className="mr-2 h-4 w-4" />
-            Audit Logs
+            <Tractor className="mr-2 h-4 w-4" /> Audit Logs
           </TabsTrigger>
         </TabsList>
 
@@ -255,14 +252,11 @@ export default function AdminPage() {
                       const owner = users.find((u) => u.id === item.owner_id);
                       return (
                         <TableRow key={item.id}>
-                          <TableCell className="font-medium">
-                            {item.brand} {item.model}
-                          </TableCell>
+                          <TableCell className="font-medium">{item.brand} {item.model}</TableCell>
                           <TableCell>{item.type}</TableCell>
                           <TableCell>{owner?.email || "N/A"}</TableCell>
                           <TableCell>
-                            Lat: {item.lat.toFixed(4)}, Lon:{" "}
-                            {item.lon.toFixed(4)}
+                            Lat: {item.lat.toFixed(4)}, Lon: {item.lon.toFixed(4)}
                           </TableCell>
                           <TableCell className="text-center capitalize">
                             <Badge variant={equipmentStatusVariant[item.status]}>
@@ -275,9 +269,7 @@ export default function AdminPage() {
                                 variant="default"
                                 size="sm"
                                 className="bg-primary/90"
-                                onClick={() =>
-                                  handleStatusUpdate(item.id, "approve")
-                                }
+                                onClick={() => handleStatusUpdate(item.id, "approve")}
                                 disabled={isUpdating === item.id}
                               >
                                 {isUpdating === item.id ? (
@@ -290,9 +282,7 @@ export default function AdminPage() {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() =>
-                                  handleStatusUpdate(item.id, "reject")
-                                }
+                                onClick={() => handleStatusUpdate(item.id, "reject")}
                                 disabled={isUpdating === item.id}
                               >
                                 {isUpdating === item.id ? (
@@ -309,10 +299,7 @@ export default function AdminPage() {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center py-12 text-muted-foreground"
-                      >
+                      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                         No equipment pending approval.
                       </TableCell>
                     </TableRow>
@@ -354,31 +341,22 @@ export default function AdminPage() {
                   ) : allBookings.length > 0 ? (
                     allBookings.map((req) => (
                       <TableRow key={req.id}>
-                        <TableCell className="font-medium">
-                          {req.equipmentName}
-                        </TableCell>
+                        <TableCell className="font-medium">{req.equipmentName}</TableCell>
                         <TableCell>{req.borrowerName}</TableCell>
                         <TableCell>{req.ownerName}</TableCell>
                         <TableCell>
                           {new Date(req.start_ts).toLocaleDateString()} to{" "}
                           {new Date(req.end_ts).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="text-right">
-                          ₹{req.total_price.toFixed(2)}
-                        </TableCell>
+                        <TableCell className="text-right">₹{req.total_price.toFixed(2)}</TableCell>
                         <TableCell className="text-center">
-                          <Badge variant={bookingStatusVariant[req.status]}>
-                            {req.status}
-                          </Badge>
+                          <Badge variant={bookingStatusVariant[req.status]}>{req.status}</Badge>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center py-12 text-muted-foreground"
-                      >
+                      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                         No bookings found.
                       </TableCell>
                     </TableRow>
@@ -394,9 +372,7 @@ export default function AdminPage() {
           <Card>
             <CardHeader>
               <CardTitle>User Management</CardTitle>
-              <CardDescription>
-                View and manage all registered users.
-              </CardDescription>
+              <CardDescription>View and manage all registered users.</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -411,9 +387,7 @@ export default function AdminPage() {
                 <TableBody>
                   {users.map((u) => (
                     <TableRow key={u.id}>
-                      <TableCell className="font-medium">
-                        {u.displayName}
-                      </TableCell>
+                      <TableCell className="font-medium">{u.displayName}</TableCell>
                       <TableCell>{u.email}</TableCell>
                       <TableCell>{u.location}</TableCell>
                       <TableCell className="text-right">
@@ -434,9 +408,7 @@ export default function AdminPage() {
           <Card>
             <CardHeader>
               <CardTitle>Audit Logs</CardTitle>
-              <CardDescription>
-                Track all significant actions performed by users and admins.
-              </CardDescription>
+              <CardDescription>Track all significant actions performed by users and admins.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-16 text-muted-foreground">

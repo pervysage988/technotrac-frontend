@@ -62,11 +62,13 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // ✅ Load bookings with user token
   const loadBookings = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
     try {
-      const data = await fetchBookings();
+      const token = await user.getIdToken(); // ← pass token here
+      const data = await fetchBookings(token); // ✅ now valid
       setBookings(data);
     } catch (error: unknown) {
       console.error(error);
@@ -162,7 +164,7 @@ export default function DashboardPage() {
           action === "accept" ? "accepted" : "rejected"
         }.`,
       });
-      loadBookings();
+      loadBookings(); // refresh after action
     } catch (e: unknown) {
       const message =
         e instanceof Error ? e.message : "Something went wrong.";
@@ -175,6 +177,7 @@ export default function DashboardPage() {
       setIsUpdating(null);
     }
   };
+
 
   return (
     <Dialog onOpenChange={(open) => !open && setSelectedRequest(null)}>

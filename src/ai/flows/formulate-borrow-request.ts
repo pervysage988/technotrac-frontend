@@ -1,5 +1,3 @@
-'use server'
-
 /**
  * @fileOverview A flow that formulates a compelling borrow request using generative AI.
  */
@@ -85,5 +83,6 @@ const formulateBorrowRequestFlow = ai.defineFlow(
 export async function formulateBorrowRequest(
   input: FormulateBorrowRequestInput
 ): Promise<FormulateBorrowRequestOutput> {
+  // ✅ Just call the flow normally; no "use server" needed
   return formulateBorrowRequestFlow(input)
 }

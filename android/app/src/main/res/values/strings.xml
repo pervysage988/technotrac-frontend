@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TechnoTrac</string>
+    <string name="title_activity_main">TechnoTrac</string>
+    <string name="package_name">com.technotrac.app</string>
+    <string name="custom_url_scheme">com.technotrac.app</string>
+</resources>

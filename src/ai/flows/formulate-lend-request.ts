@@ -1,4 +1,3 @@
-'use server'
 
 /**
  * @fileOverview A flow that formulates a compelling lend request using generative AI.
